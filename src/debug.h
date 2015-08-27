@@ -1,5 +1,5 @@
 /**
- *
+ * A simple DEBUG wrapper to simply add/remove debug code in an app.
  *
 	#define DEBUG // comment out to en/disable
 	#include "debug.h"
@@ -8,7 +8,7 @@
 	#define DEBUG // comment out to en/disable
 	#define DEBUG_USE_SOFTSERIAL
 	#include "debug.h"
-	D(SoftwareSerial* debugSerial;)
+	D(SoftwareSerial debugSerial;)
 
     // in setup
     D(debugSerial = SoftwareSerial(2, 3);)
