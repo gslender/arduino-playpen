@@ -1,6 +1,6 @@
 #include "../blu-qstarz/blu-qstarz.h"
 
-SoftwareSerial bluetooth(4, 3);
+SoftwareSerial bluetooth(6, 5);
 TinyGPSPlus gps;
 
 void displayInfo() {
@@ -61,12 +61,103 @@ void gpsLoop() {
 	}
 }
 
-void bluqstarz_setup()
-{
-	Serial.begin(38400);
-	Serial.print(F("** blu-qstarz **"));
+void readResponse() {
+	char buffer[25];
 
+	char *p = buffer;
+	*p = 0;
+
+	unsigned long start_ticks = millis(), now_ticks;
+
+	while (((size_t) (p - buffer) < sizeof(buffer) - 1) && (p[-1] != '\n' || p[-2] != '\r')) {
+		now_ticks = millis();
+		if (now_ticks - start_ticks > 1000) {
+			break;
+		}
+		if (bluetooth.available()) {
+			*p++ = bluetooth.read();
+			start_ticks = millis();
+		}
+	}
+
+	if (p[-1] == '\n' && p[-2] == '\r')
+		p -= 2;
+
+	*p = 0;
+
+	Serial.println(buffer);
+}
+
+
+void readUntil(unsigned long delay) {
+	unsigned long start_ticks = millis();
+	unsigned long now_ticks = millis();
+	while (now_ticks - start_ticks < delay) {
+		if (bluetooth.available()) {
+			Serial.print(char(bluetooth.read()));
+		}
+		now_ticks = millis();
+	}
+}
+
+void doCmd(const __FlashStringHelper *cmd) {
+
+	Serial.println(cmd);
+	bluetooth.println(cmd);
+	readResponse();
+}
+
+void bluqstarz_setup() {
+	Serial.begin(115200);
 	bluetooth.begin(38400);
+
+	Serial.println(F("** blu-qstarz **"));
+
+	readUntil(100);
+	pinMode(7, OUTPUT);
+	digitalWrite(7, HIGH);
+	Serial.println(F("pin 7 high"));
+
+	doCmd(F("AT"));
+
+	doCmd(F("AT+UART=9600,0,0"));
+
+	doCmd(F("AT+ORGL"));
+
+	doCmd(F("AT+RESET"));
+
+	readUntil(1000);
+
+//	doCmd(F("AT+RMAAD"));
+	doCmd(F("AT+ADCN?"));
+
+	doCmd(F("AT+ROLE=1"));
+
+	doCmd(F("AT+PSWD=0000"));
+
+	doCmd(F("AT+INIT"));
+
+	doCmd(F("AT+INQM=1,9,4")); // limit to 4*1.28s = ~5 seconds
+
+	doCmd(F("AT+INQ"));
+	readUntil(6000);
+
+	doCmd(F("AT+STATE"));
+
+	doCmd(F("AT+RNAME?1C,88,14386E"));
+	readUntil(5000);
+	doCmd(F("AT+STATE"));
+
+	doCmd(F("AT+LINK=1C,88,14386E"));
+	readUntil(1000);
+	Serial.println(F("wait for 5 sec"));
+
+	delay(5000);
+	digitalWrite(7, LOW);
+	Serial.println(F("pin 7 low"));
+
+//	doCmd(F("AT+RESET"));
+
 	// turn on RMC (recommended minimum) and GGA (fix data) including altitude
 	//gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
 
@@ -84,14 +175,18 @@ void bluqstarz_setup()
 
  */
 
-void bluqstarz_loop()
-{
-    if(bluetooth.available())
-    {
-      Serial.print(char(bluetooth.read()));
-    }
-    if(Serial.available())
-    {
-    	bluetooth.print(char(Serial.read()));
-    }
+unsigned long loopCnt = 0;
+
+void bluqstarz_loop() {
+	if (bluetooth.available()) {
+		char c = char(bluetooth.read());
+		gps.encode(c);
+//		Serial.print(c);
+	}
+	loopCnt++;
+
+	if (loopCnt > 10000) {
+		displayInfo();
+		loopCnt=0;
+	}
 }
