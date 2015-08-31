@@ -959,7 +959,7 @@ bool Bluetooth_HC05::inquire(InquiryCallback callback, unsigned long timeout)
   while (!isOperationTimedOut())
   {
 
-    char response[HC05_ADDRESS_BUFSIZE + 10];
+    char response[HC05_ADDRESS_BUFSIZE + 15];
     PGM_STRING_MAPPED_TO_RAM(response_pattern, "+INQ:");
     const char *address_part;
 
@@ -1045,7 +1045,7 @@ bool Bluetooth_HC05::readAddressWithCommand(BluetoothAddress &address,
   const char *command_name, unsigned long timeout)
 {
   startOperation(timeout);
-  memset(address, 0, sizeof(BluetoothAddress));
+  memset(address.bytes, 0, sizeof(BluetoothAddress));
 
   if (!command_name)
     return false;
@@ -1194,7 +1194,7 @@ bool Bluetooth_HC05::parseBluetoothAddress(
   /* Address should look like "+ADDR:<NAP>:<UAP>:<LAP>",
    * where actual address will look like "1234:56:abcdef".
    */
-  if (!address || !address_str)
+  if (!address.bytes || !address_str)
     return false;
 
   char *digits_ptr = const_cast<char*>(address_str);
@@ -1214,12 +1214,12 @@ bool Bluetooth_HC05::parseBluetoothAddress(
   uint8_t LAP[4];
   *((uint32_t*)LAP) = htoul(++digits_ptr);
 
-  address[0] = NAP[1];
-  address[1] = NAP[0];
-  address[2] = UAP;
-  address[3] = LAP[2];
-  address[4] = LAP[1];
-  address[5] = LAP[0];
+  address.bytes[0] = NAP[1];
+  address.bytes[1] = NAP[0];
+  address.bytes[2] = UAP;
+  address.bytes[3] = LAP[2];
+  address.bytes[4] = LAP[1];
+  address.bytes[5] = LAP[0];
 
   return true;
 }
@@ -1228,19 +1228,19 @@ bool Bluetooth_HC05::parseBluetoothAddress(
 int Bluetooth_HC05::printBluetoothAddress(char *address_str,
   const BluetoothAddress &address, char delimiter)
 {
-  if (!address || !address_str)
+  if (!address.bytes || !address_str)
     return 0;
 
   uint8_t NAP[2];
-  NAP[0] = address[1];
-  NAP[1] = address[0];
+  NAP[0] = address.bytes[1];
+  NAP[1] = address.bytes[0];
 
-  uint8_t UAP = address[2];
+  uint8_t UAP = address.bytes[2];
 
   uint8_t LAP[4];
-  LAP[0] = address[5];
-  LAP[1] = address[4];
-  LAP[2] = address[3];
+  LAP[0] = address.bytes[5];
+  LAP[1] = address.bytes[4];
+  LAP[2] = address.bytes[3];
   LAP[3] = 0;
 
   PGM_STRING_MAPPED_TO_RAM(format, "%x%c%x%c%lx");

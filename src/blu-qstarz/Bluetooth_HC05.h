@@ -29,7 +29,7 @@
 #include "WProgram.h"
 #endif
 
-#define HC05_DEBUG 1 // uncomment for debug messages
+//#define HC05_DEBUG 1 // uncomment for debug messages
 #define HC05_SOFTSERIAL 1
 
 #ifdef HC05_SOFTSERIAL
@@ -51,11 +51,17 @@ enum
   HC05_ADDRESS_BUFSIZE = HC05_ADDRESS_MAXLEN + 1,
 };
 
-typedef uint8_t BluetoothAddress[6];
-//typedef struct	BluetoothAddress	{
-//	uint8_t& operator[](int i) { return data[i]; }
-//	uint8_t		data[ 6 ];
-//} BluetoothAddress;
+typedef union
+{
+	uint8_t bytes[6];
+    struct
+    {
+		uint8_t nap[2];
+		uint8_t uap;
+		uint8_t lap[3];
+    } fields;
+
+} BluetoothAddress;
 
 typedef void (*InquiryCallback)(const BluetoothAddress &address);
 

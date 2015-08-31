@@ -13,7 +13,7 @@
 
 void bluqstarz_setup();
 void bluqstarz_loop();
-
+void listBluetoothDevicesFound();
 void bluetoothDeviceFound(const BluetoothAddress &address);
 void blu_command();
 void gps_command();
@@ -22,10 +22,11 @@ void unrecognized();
 
 void displayInfo();
 
+/*
+
 void readResponse();
 void readUntil(unsigned long delay);
 void doCmd(const __FlashStringHelper *cmd);
-/*
 void doCmdFmt(const __FlashStringHelper *cmd,...);
 void enableATCmds();
 void disableATCmds();
