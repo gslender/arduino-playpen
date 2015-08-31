@@ -1,0 +1,19 @@
+AT+NAME=arduino-playpen   /// set our name (as seen by other devices)
+
+AT+RNAME? 1234,56,abcdef   /// ask the remote end their name, based on the address they provide (from the INQ)
+
+AT+ROLE=1 /// change to MASTER role 
+
+AT+UART=9600, 0, 0   /// change buad to 9600 8,N,1
+
+AT+BIND=1234,56,abcdef /// connect to remote addr
+
+AT+RMAAD   /// remove all paired devices
+
+AT+STATE? /// report status
+
+AT+INIT /// initialise the SPP profile 
+
+AT+INQ /// inquire / search for nearby devices
+
+AT+PAIR=1234,56,abcdef,20

@@ -13,7 +13,7 @@ Bluetooth_HC05 blumod(bt_serial);
 
 void bluqstarz_setup() {
 	Serial.begin(115200);
-
+//
 	blumod.begin(38400, 7, HC05_MODE_COMMAND);
 
 	sercmd.addCommand("?", showHelp);
@@ -21,6 +21,97 @@ void bluqstarz_setup() {
 	sercmd.addCommand("blu", blu_command);
 	sercmd.addDefaultHandler(unrecognized);
 	Serial.println(F("** blu-qstarz **"));
+/*
+	bt_serial.begin(38400);
+
+	 readUntil(100);
+	 pinMode(7, OUTPUT);
+	 digitalWrite(7, HIGH);
+	 Serial.println(F("pin 7 high"));
+
+	 doCmd(F("AT"));
+
+	 doCmd(F("AT+UART=9600,0,0"));
+
+	 doCmd(F("AT+ORGL"));
+
+	 doCmd(F("AT+RESET"));
+
+	 readUntil(1000);
+
+	 //	doCmd(F("AT+RMAAD"));
+
+	 doCmd(F("AT+ROLE=1"));
+
+	 doCmd(F("AT+PSWD=0000"));
+
+	 doCmd(F("AT+INIT"));
+
+	 doCmd(F("AT+INQM=1,9,4")); // limit to 4*1.28s = ~5 seconds
+
+	 doCmd(F("AT+INQ"));
+	 readUntil(6000);
+
+	 doCmd(F("AT+STATE"));
+
+	 doCmd(F("AT+RNAME?1C,88,14386E"));
+	 readUntil(5000);
+	 doCmd(F("AT+STATE"));
+
+	 doCmd(F("AT+LINK=1C,88,14386E"));
+	 readUntil(1000);
+	 Serial.println(F("wait for 5 sec"));
+
+	 delay(5000);
+	 digitalWrite(7, LOW);
+	 Serial.println(F("pin 7 low"));
+	 // */
+}
+
+void readResponse() {
+	char buffer[25];
+
+	char *p = buffer;
+	*p = 0;
+
+	unsigned long start_ticks = millis(), now_ticks;
+
+	while (((size_t) (p - buffer) < sizeof(buffer) - 1)
+			&& (p[-1] != '\n' || p[-2] != '\r')) {
+		now_ticks = millis();
+		if (now_ticks - start_ticks > 1000) {
+			break;
+		}
+		if (bt_serial.available()) {
+			*p++ = bt_serial.read();
+			start_ticks = millis();
+		}
+	}
+
+	if (p[-1] == '\n' && p[-2] == '\r')
+		p -= 2;
+
+	*p = 0;
+
+	Serial.println(buffer);
+}
+
+void readUntil(unsigned long delay) {
+	bt_serial.flush();
+	unsigned long start_ticks = millis();
+	unsigned long now_ticks = millis();
+	while (now_ticks - start_ticks < delay) {
+		if (bt_serial.available()) {
+			Serial.print(char(bt_serial.read()));
+		}
+		now_ticks = millis();
+	}
+}
+
+void doCmd(const __FlashStringHelper *cmd) {
+	Serial.println(cmd);
+	bt_serial.println(cmd);
+	readResponse();
 }
 
 void gps_command() {
@@ -62,6 +153,34 @@ void blu_command() {
 	arg = sercmd.next();
 
 	if (arg != NULL) {
+
+
+		if (strcmp(arg, "test") == 0) {
+
+			doCmd(F("AT"));
+
+			doCmd(F("AT+UART=9600,0,0"));
+
+			doCmd(F("AT+ORGL"));
+
+			doCmd(F("AT+RESET"));
+
+			delay(500);
+
+			doCmd(F("AT+RMAAD"));
+			doCmd(F("AT+ADCN?"));
+
+			doCmd(F("AT+ROLE=1"));
+
+			doCmd(F("AT+PSWD=0000"));
+
+			doCmd(F("AT+INIT"));
+
+			doCmd(F("AT+INQM=1,9,4")); // limit to 4*1.28s = ~5 seconds
+
+			doCmd(F("AT+INQ"));
+		}
+
 		if (strcmp(arg, "name") == 0) {
 			char buffer[20];
 			blumod.getName(buffer);
@@ -71,10 +190,14 @@ void blu_command() {
 
 		if (strcmp(arg, "reset") == 0) {
 			blumod.restoreDefaults();
-			blumod.softReset();
+			delay(500);
 			blumod.setSerialMode(9600, 1, HC05_NO_PARITY);
 			blumod.setRole(HC05_ROLE_MASTER);
 			blumod.setPassword("0000");
+			blumod.softReset();
+			delay(500);
+			blumod.probe();
+			Serial.println("bluetooth reset");
 		}
 
 		if (strcmp(arg, "find") == 0) {
@@ -84,18 +207,10 @@ void blu_command() {
 				num = atol(arg);
 			}
 
-			blumod.restoreDefaults();
-			blumod.softReset();
-			blumod.setSerialMode(9600, 1, HC05_NO_PARITY);
-//			if (blumod.getLastError() != HC05_OK) Serial.print("1fail");
 			blumod.setRole(HC05_ROLE_MASTER);
-//			if (blumod.getLastError() != HC05_OK) Serial.print("2fail");
 			blumod.setPassword("0000");
-//			if (blumod.getLastError() != HC05_OK) Serial.print("3fail");
 			blumod.initSerialPortProfile();
-//			if (blumod.getLastError() != HC05_OK) Serial.print("4fail");
 			blumod.setInquiryMode(HC05_INQUIRY_RSSI, 9, num);
-//			if (blumod.getLastError() != HC05_OK) Serial.print("5fail");
 			blumod.inquire(bluetoothDeviceFound);
 //			if (blumod.getLastError() != HC05_OK) Serial.print("6fail");
 

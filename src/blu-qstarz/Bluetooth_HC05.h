@@ -29,6 +29,7 @@
 #include "WProgram.h"
 #endif
 
+#define HC05_DEBUG 1 // uncomment for debug messages
 #define HC05_SOFTSERIAL 1
 
 #ifdef HC05_SOFTSERIAL
@@ -51,6 +52,11 @@ enum
 };
 
 typedef uint8_t BluetoothAddress[6];
+//typedef struct	BluetoothAddress	{
+//	uint8_t& operator[](int i) { return data[i]; }
+//	uint8_t		data[ 6 ];
+//} BluetoothAddress;
+
 typedef void (*InquiryCallback)(const BluetoothAddress &address);
 
 enum HC05_Mode { HC05_MODE_DATA = 0, HC05_MODE_COMMAND = 1 };
@@ -128,7 +134,7 @@ public:
 #endif
   virtual ~Bluetooth_HC05();
 
-  void begin(unsigned baud_rate = 38400, uint8_t mode_pin = 0xFF, HC05_Mode mode = HC05_MODE_COMMAND);
+  void begin(long baud_rate = 38400, uint8_t mode_pin = 0xFF, HC05_Mode mode = HC05_MODE_COMMAND);
   void changeMode(HC05_Mode mode = HC05_MODE_DATA);
   bool probe(unsigned long timeout = HC05_DEFAULT_TIMEOUT);
   bool softReset(unsigned long timeout = HC05_DEFAULT_TIMEOUT);

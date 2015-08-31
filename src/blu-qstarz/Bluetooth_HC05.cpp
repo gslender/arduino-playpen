@@ -90,7 +90,7 @@ HC05_Result Bluetooth_HC05::getLastError() const
   return m_errorCode;
 }
 
-void Bluetooth_HC05::begin(unsigned baud_rate, uint8_t mode_pin, HC05_Mode mode)
+void Bluetooth_HC05::begin(long baud_rate, uint8_t mode_pin, HC05_Mode mode)
 {
   m_uart->begin(baud_rate);
 
@@ -954,26 +954,32 @@ bool Bluetooth_HC05::inquire(InquiryCallback callback, unsigned long timeout)
   PGM_STRING_MAPPED_TO_RAM(command, "INQ");
   writeCommand(command);
 
+  bool result = false;
+
   while (!isOperationTimedOut())
   {
-    if (m_uart->peek() != '+')
-      break;
 
     char response[HC05_ADDRESS_BUFSIZE + 10];
     PGM_STRING_MAPPED_TO_RAM(response_pattern, "+INQ:");
     const char *address_part;
-    address_part = readResponseWithPrefix(response, sizeof(response), response_pattern);
+
+    size_t response_length = readLine(response, sizeof(response));
+    PGM_STRING_MAPPED_TO_RAM(OK, "OK");
+    if (strcmp(response, OK) == 0) {
+    	result = true;
+    	break;
+    }
+    address_part = skipPrefix(response, response_length, response_pattern);
 
     BluetoothAddress address;
     parseBluetoothAddress(address, address_part, ':');
 
     if (callback) {
-    	Serial.println("found and calling!");
         callback(address);
     }
   }
 
-  return readOperationResult();
+  return result;
 }
 
 
@@ -1107,18 +1113,33 @@ void Bluetooth_HC05::writeCommand(const char *command, const char *arg)
 {
   PGM_STRING_MAPPED_TO_RAM(AT, "AT");
   m_uart->print(AT);
+#ifdef HC05_DEBUG
+  Serial.print(AT);
+#endif
 
   if (command && command[0] != 0)
   {
     m_uart->write('+');
     m_uart->print(command);
+#ifdef HC05_DEBUG
+    Serial.write('+');
+    Serial.print(command);
+#endif
   }
 
-  if (arg && arg[0] != 0)
+  if (arg && arg[0] != 0) {
     m_uart->print(arg);
+#ifdef HC05_DEBUG
+    Serial.print(arg);
+#endif
+  }
 
   PGM_STRING_MAPPED_TO_RAM(EOL, "\r\n");
   m_uart->print(EOL);
+
+#ifdef HC05_DEBUG
+  Serial.print(EOL);
+#endif
 }
 
 
@@ -1144,13 +1165,16 @@ size_t Bluetooth_HC05::readLine(char *buffer, size_t buffer_size)
   EXIT_LOOP:
     break;
   }
+#ifdef HC05_DEBUG
+  *p = 0;
+  Serial.print(buffer);
+#endif
 
   if (p[-1] == '\n' && p[-2] == '\r')
     p -= 2;
 
   *p = 0;
 
-  Serial.print(buffer);
 
   PGM_STRING_MAPPED_TO_RAM(error_prefix, "ERROR:(");
 
@@ -1270,6 +1294,10 @@ void Bluetooth_HC05::startOperation(unsigned long timeout)
 
 bool Bluetooth_HC05::isOperationTimedOut() const
 {
+#ifdef HC05_DEBUG
+	if ( operationDuration() >= m_timeout)
+		Serial.println("*** OperationTimedOut");
+#endif
   return operationDuration() >= m_timeout;
 }
 

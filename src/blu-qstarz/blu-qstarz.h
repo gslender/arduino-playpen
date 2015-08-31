@@ -21,10 +21,11 @@ void showHelp();
 void unrecognized();
 
 void displayInfo();
-/*
+
 void readResponse();
 void readUntil(unsigned long delay);
 void doCmd(const __FlashStringHelper *cmd);
+/*
 void doCmdFmt(const __FlashStringHelper *cmd,...);
 void enableATCmds();
 void disableATCmds();
