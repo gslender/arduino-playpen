@@ -29,14 +29,19 @@
 #include "WProgram.h"
 #endif
 
-//#define HC05_DEBUG 1 // uncomment for debug messages
+/* Use the following defines to enable/disable debug or serial.
+ * #define HC05_DEBUG 1
+ * #define HC05_SOFTSERIAL 1
+ */
 #define HC05_SOFTSERIAL 1
+#define HC05_DEBUG 1
 
 #ifdef HC05_SOFTSERIAL
 #include <SoftwareSerial.h>
 #endif
 #include <stdlib.h>
 #include <inttypes.h>
+#include <limits.h>
 
 enum
 {
@@ -51,15 +56,14 @@ enum
   HC05_ADDRESS_BUFSIZE = HC05_ADDRESS_MAXLEN + 1,
 };
 
-typedef union
-{
+typedef union {
 	uint8_t bytes[6];
     struct
     {
-		uint8_t nap[2];
-		uint8_t uap;
-		uint8_t lap[3];
-    } fields;
+		uint16_t NAP;
+		uint8_t UAP :8;
+		uint32_t LAP :24;
+    };
 
 } BluetoothAddress;
 
@@ -141,8 +145,10 @@ public:
   virtual ~Bluetooth_HC05();
 
   void begin(long baud_rate = 38400, uint8_t mode_pin = 0xFF, HC05_Mode mode = HC05_MODE_COMMAND);
+  void begin(long baud_rate = 38400,  uint8_t reset_pin = 0xFF, uint8_t mode_pin = 0xFF, HC05_Mode mode = HC05_MODE_COMMAND);
   void changeMode(HC05_Mode mode = HC05_MODE_DATA);
   bool probe(unsigned long timeout = HC05_DEFAULT_TIMEOUT);
+  void hardReset();
   bool softReset(unsigned long timeout = HC05_DEFAULT_TIMEOUT);
   bool getVersion(char *buffer, size_t buffer_size, unsigned long timeout = HC05_DEFAULT_TIMEOUT);
   bool restoreDefaults(unsigned long timeout = HC05_DEFAULT_TIMEOUT);
@@ -208,6 +214,7 @@ private:
   unsigned long m_ticksAtStart;
 
   uint8_t m_modePin;
+  uint8_t m_resetPin;
   HC05_Result m_errorCode;
 
   bool readAddressWithCommand(BluetoothAddress &address,

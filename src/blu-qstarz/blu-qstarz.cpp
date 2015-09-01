@@ -63,7 +63,11 @@ void listBluetoothDevicesFound() {
 		char address_str[HC05_ADDRESS_BUFSIZE];
 		blumod.getRemoteDeviceName(discoveredDevices_p[c],address_str,HC05_ADDRESS_BUFSIZE,30000);
 		Serial.printf(F("Device %d="),c);
-		Serial.println(address_str);
+		Serial.print(address_str);
+		Serial.print(F(" ["));
+		blumod.printBluetoothAddress(address_str,discoveredDevices_p[c],',');
+		Serial.print(address_str);
+		Serial.println(F("]"));
 	}
 }
 
@@ -88,6 +92,19 @@ void blu_command() {
 
 	if (arg != NULL) {
 
+		//1c 88 14 38 6e
+
+		if (strcmp(arg, "connect") == 0) {
+
+			blumod.setRole(HC05_ROLE_MASTER);
+			blumod.setPassword("0000");
+			blumod.initSerialPortProfile();
+			blumod.setInquiryMode(HC05_INQUIRY_RSSI, 9, 3);
+			blumod.inquire(NULL,60000);
+			BluetoothAddress qstarz818 = { 0x1c, 0x00, 0x88, 0x6e, 0x38, 0x14 };
+			blumod.connect(qstarz818,10000);
+		}
+
 		if (strcmp(arg, "name") == 0) {
 			char buffer[20];
 			blumod.getName(buffer);
@@ -108,7 +125,7 @@ void blu_command() {
 		}
 
 		if (strcmp(arg, "find") == 0) {
-			int num = 25;
+			int num = 5;
 			arg = sercmd.next();
 			if (arg != NULL) {
 				num = atol(arg);
@@ -117,7 +134,7 @@ void blu_command() {
 			blumod.setRole(HC05_ROLE_MASTER);
 			blumod.setPassword("0000");
 			blumod.initSerialPortProfile();
-			blumod.setInquiryMode(HC05_INQUIRY_RSSI, 30, num);
+			blumod.setInquiryMode(HC05_INQUIRY_RSSI, 9, num);
 			Serial.print(F("Searching"));
 			blumod.inquire(bluetoothDeviceFound,60000);
 			Serial.println();
