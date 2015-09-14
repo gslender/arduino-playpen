@@ -1,28 +1,51 @@
-#include "../blu-qstarz/blu-qstarz.h"
+#include "Arduino.h"
+#include "TinyGPS++.h" // GPS library
+#include "SerialCommand.h"
+#include "Bluetooth_HC05.h"
+#include <SoftwareSerial.h>
+#define SERIALCOMMANDBUFFER 16
+#define SERIALCOMMANDDEBUG
 
-SoftwareSerial bt_serial(6, 5);
+void listBluetoothDevicesFound();
+void bluetoothDeviceFound(const BluetoothAddress &address);
+void blu_command();
+void gps_command();
+void showHelp();
+void unrecognized();
+
+void displayInfo();
+
+SoftwareSerial bt_serial(3, 2);
 TinyGPSPlus gps;
 SerialCommand sercmd;
 Bluetooth_HC05 blumod(bt_serial);
 #define MAX_DISCOVERED_DEVICES	3
 BluetoothAddress *discoveredDevices_p = (BluetoothAddress *)malloc(MAX_DISCOVERED_DEVICES * sizeof(BluetoothAddress));
 uint8_t discoveredDevicesPos = 0;
+bool bt_gps_active = false;
+int cnt= 0;
 
 #define STR_FLASH(name, src) \
   static const char name##_pgm[] PROGMEM = src; \
   char name[sizeof(name##_pgm)]; \
   strcpy_P(name, name##_pgm);
 
-void bluqstarz_setup() {
+void setup() {
 	Serial.begin(115200);
 
-	blumod.begin(38400, 7, HC05_MODE_COMMAND);
+//	blumod.beginDetect(7);
+	blumod.begin(38400,6, HC05_RESET_GND, 7, HC05_MODE_COMMAND);
 
 	sercmd.addCommand("?", showHelp);
 	sercmd.addCommand("gps", gps_command);
 	sercmd.addCommand("blu", blu_command);
 	sercmd.addDefaultHandler(unrecognized);
 	Serial.println(F("** blu-qstarz **"));
+
+//	cli(); //stop interrupts
+//	OCR0A = 0xAF;
+//	TIMSK0 |= _BV(OCIE0A);
+//	sei(); //allow interrupts
 }
 
 void gps_command() {
@@ -44,6 +67,25 @@ void gps_command() {
 				displayInfo();
 			}
 
+		}
+		if (strcmp(arg, "read") == 0) {
+			unsigned long start_time = millis();
+			unsigned long time_lap = 0;
+			Serial.print(F("start_time:"));
+			Serial.print(start_time);
+			Serial.println(F(" --- "));
+
+			if (bt_gps_active) {
+				while (time_lap < 5000) {
+					if (bt_serial.available() > 0) {
+						char c = bt_serial.read();
+						gps.encode(c);
+						Serial.print(c);
+					}
+					time_lap = millis() - start_time;
+				}
+				Serial.println(F("--- done!"));
+			}
 		}
 	} else {
 		Serial.print(gps.charsProcessed());
@@ -102,7 +144,24 @@ void blu_command() {
 			blumod.setInquiryMode(HC05_INQUIRY_RSSI, 9, 3);
 			blumod.inquire(NULL,60000);
 			BluetoothAddress qstarz818 = { 0x1c, 0x00, 0x88, 0x6e, 0x38, 0x14 };
-			blumod.connect(qstarz818,10000);
+			bt_gps_active = blumod.connect(qstarz818,10000);
+//			blumod.changeMode(HC05_MODE_DATA);
+
+//			pinMode(5, OUTPUT);
+//			digitalWrite(5, LOW);
+			/*
+			 	blumod.begin(38400, 7, HC05_MODE_COMMAND);
+				delay(1000);
+				blumod.restoreDefaults();
+				blumod.setRole(HC05_ROLE_MASTER);
+				blumod.setPassword("0000");
+				blumod.initSerialPortProfile();
+				delay(1000);
+				blumod.inquire(NULL);
+				BluetoothAddress qstarz818 = { 0x1c, 0x00, 0x88, 0x6e, 0x38, 0x14 };
+				bt_gps_active = blumod.connect(qstarz818,10000);
+				blumod.changeMode(HC05_MODE_DATA);
+			 */
 		}
 
 		if (strcmp(arg, "name") == 0) {
@@ -113,14 +172,11 @@ void blu_command() {
 		}
 
 		if (strcmp(arg, "reset") == 0) {
+			blumod.changeMode(HC05_MODE_COMMAND);
+			delay(1000);
 			blumod.restoreDefaults();
-			delay(500);
-			blumod.setSerialMode(9600, 1, HC05_NO_PARITY);
 			blumod.setRole(HC05_ROLE_MASTER);
 			blumod.setPassword("0000");
-			blumod.softReset();
-			delay(500);
-			blumod.probe();
 			Serial.println(F("bluetooth reset"));
 		}
 
@@ -141,6 +197,11 @@ void blu_command() {
 			listBluetoothDevicesFound();
 		}
 
+
+		if (strcmp(arg, "cmd") == 0) {
+//			blumod.setCommandMode()
+
+		}
 	} else {
 		HC05_State state;
 		blumod.probe();
@@ -161,7 +222,7 @@ void unrecognized() {
 	Serial.println(F("? unrecognized cmd - type '?' for help"));
 }
 
-void bluqstarz_loop() {
+void loop() {
 
 	sercmd.readSerial();
 }
@@ -210,152 +271,3 @@ void displayInfo() {
 
 	Serial.println();
 }
-/*
- *
-
- void readResponse() {
- char buffer[25];
-
- char *p = buffer;
- *p = 0;
-
- unsigned long start_ticks = millis(), now_ticks;
-
- while (((size_t) (p - buffer) < sizeof(buffer) - 1)
- && (p[-1] != '\n' || p[-2] != '\r')) {
- now_ticks = millis();
- if (now_ticks - start_ticks > 1000) {
- break;
- }
- if (bluetooth.available()) {
- *p++ = bluetooth.read();
- start_ticks = millis();
- }
- }
-
- if (p[-1] == '\n' && p[-2] == '\r')
- p -= 2;
-
- *p = 0;
-
- Serial.println(buffer);
- }
-
- void readUntil(unsigned long delay) {
- bluetooth.flush();
- unsigned long start_ticks = millis();
- unsigned long now_ticks = millis();
- while (now_ticks - start_ticks < delay) {
- if (bluetooth.available()) {
- Serial.print(char(bluetooth.read()));
- }
- now_ticks = millis();
- }
- }
-
- void doCmd(const __FlashStringHelper *cmd) {
- Serial.println(cmd);
- bluetooth.println(cmd);
- readResponse();
- }
-
- void doCmdFmt(const __FlashStringHelper *cmd,...){
- va_list ap;
- Serial.printf(cmd,ap);
- Serial.println();
- bluetooth.printf(cmd,ap);
- bluetooth.println();
- readResponse();
- }
-
-
- void enableATCmds() {
- digitalWrite(7, HIGH);
- readUntil(100);
- }
-
- void disableATCmds() {
- digitalWrite(7, LOW);
- readUntil(100);
- }
-
- void doCmd(const char *cmd) {
- Serial.println(cmd);
- bluetooth.println(cmd);
- readResponse();
- }
-
- void doCmd(const __FlashStringHelper *cmd) {
- Serial.println(cmd);
- bluetooth.println(cmd);
- readResponse();
- }
-
- readUntil(100);
- pinMode(7, OUTPUT);
- digitalWrite(7, HIGH);
- Serial.println(F("pin 7 high"));
-
- doCmd(F("AT"));
-
- doCmd(F("AT+UART=9600,0,0"));
-
- doCmd(F("AT+ORGL"));
-
- doCmd(F("AT+RESET"));
-
- readUntil(1000);
-
- //	doCmd(F("AT+RMAAD"));
- doCmd(F("AT+ADCN?"));
-
- doCmd(F("AT+ROLE=1"));
-
- doCmd(F("AT+PSWD=0000"));
-
- doCmd(F("AT+INIT"));
-
- doCmd(F("AT+INQM=1,9,4")); // limit to 4*1.28s = ~5 seconds
-
- doCmd(F("AT+INQ"));
- readUntil(6000);
-
- doCmd(F("AT+STATE"));
-
- doCmd(F("AT+RNAME?1C,88,14386E"));
- readUntil(5000);
- doCmd(F("AT+STATE"));
-
- doCmd(F("AT+LINK=1C,88,14386E"));
- readUntil(1000);
- Serial.println(F("wait for 5 sec"));
-
- delay(5000);
- digitalWrite(7, LOW);
- Serial.println(F("pin 7 low"));
-
- //	doCmd(F("AT+RESET"));
-
- // turn on RMC (recommended minimum) and GGA (fix data) including altitude
- //gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-
- // Set the update rate
- //gps.sendCommand(PMTK_SET_NMEA_UPDATE_5HZ);   // 5 Hz update rate
- //gps.sendCommand(PMTK_API_SET_FIX_CTL_5HZ);   // 5 Hz update rate
-
- */
-
-/*
- if (bluetooth.available()) {
- char c = char(bluetooth.read());
- gps.encode(c);
- //		Serial.print(c);
- }
- loopCnt++;
-
- if (loopCnt > 10000) {
- displayInfo();
- loopCnt=0;
- }
- */
-
