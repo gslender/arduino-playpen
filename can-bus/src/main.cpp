@@ -11,11 +11,6 @@ MCP_CAN CANbus(SPI_CS_PIN);
 
 long time_lap, start_time = millis();
 
-//MS data vars
-byte ENGINE;
-unsigned int RPM, MAP, SPKADV, BATTV, TPS, Knock, Baro, EGOc, IAC, dwell, idle_tar;
-int AFR, AFRtgt, CLT, MAT;
-
 typedef struct {
 	// 1512
 	union {
@@ -74,6 +69,7 @@ typedef struct {
 } MSVars;
 
 MSVars ms_variables;
+static char outstr[15];
 
 // -------------------------------------------------------------
 void setup(void) {
@@ -101,19 +97,22 @@ void loop(void) {
 	if (time_lap > 200) {
 		start_time = millis();
 
-		Serial.printf(F("%d %d %d \r\n"), RPM, SPKADV, MAP);
+		Serial.printf(F("%d "), ms_variables.RPM);
+		dtostrf((float) ms_variables.ADV_DEG / 10.0, 6, 2, outstr);
+		Serial.printf(F("%s "), outstr);
+		dtostrf((float) ms_variables.MAP / 10.0, 6, 2, outstr);
+		Serial.printf(F("%s \r\n"), outstr);
 	}
 
 	unsigned char len = 0;
 	unsigned char buf[8];
-	if (CAN_MSGAVAIL == CANbus.checkReceive())           // check if data coming
-			{
-		CANbus.readMsgBuf(&len, buf); // read data,  len: data length, buf: data buf
-
+	if (CAN_MSGAVAIL == CANbus.checkReceive()) {
+		CANbus.readMsgBuf(&len, buf);
 		switch (CANbus.getCanId()) { // ID's 1520+ are Megasquirt CAN broadcast frames
 
 		// typical compiler optimizations will convert memcpy to multiple LDM/STM instructions
 		case 1512:
+			  //ms_variables.RPM = (uint16_t) (word(buf[2], buf[3]));
 			  memcpy(ms_variables.bytes1512, buf, 8);
 			break;
 		case 1513:
@@ -128,46 +127,10 @@ void loop(void) {
 		case 1516:
 			  memcpy(ms_variables.bytes1516, buf, 8);
 			break;
-/*
-		case 1520: // 0
-			RPM = (int) (word(buf[6], buf[7]));
-			break;
-		case 1521: // 1
-			SPKADV = (int) (word(buf[0], buf[1]));
-			ENGINE = buf[3];
-			AFRtgt = (int) (word(0x00, buf[4]));
-			break;
-		case 1522: // 2
-			Baro = (int) (word(buf[0], buf[1]));
-			MAP = (int) (word(buf[2], buf[3]));
-			MAT = (int) (word(buf[4], buf[5]));
-			CLT = (int) (word(buf[6], buf[7]));
-			break;
-		case 1523: // 3
-			TPS = (int) (word(buf[0], buf[1]));
-			BATTV = (int) (word(buf[2], buf[3]));
-			break;
-		case 1524: // 4
-			Knock = (int) (word(buf[0], buf[1]));
-			EGOc = (int) (word(buf[2], buf[3]));
-			break;
-		case 1526: // 6
-			IAC = (int) (word(buf[6], buf[7])); //IAC = (IAC * 49) / 125;
-			break;
-		case 1529: // 9
-			dwell = (int) (word(buf[4], buf[5]));
-			break;
-		case 1548: // 28
-			idle_tar = (int) (word(buf[0], buf[1]));
-			break;
-		case 1551: // 31
-			AFR = (int) (word(0x00, buf[0]));
-			break;
-			*/
 		default: // not a broadcast packet
 
 			Serial.write("ID: ");
-			Serial.print(CANbus.getCanId());
+			Serial.println(CANbus.getCanId());
 
 		}
 	}
