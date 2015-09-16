@@ -18,19 +18,39 @@
 */
 
  #define SPI_HARDWARE
+// #define SPI_SOFTWARE
  #define RSREG DDRD
  #define RSTREG DDRD
  #define RSPORT PORTD
  #define RSTPORT PORTD
- #define RS PD7
- #define RST PD6
+ #define RS PB0    // 8
+ #define RST -1
  #define SPIREG DDRB
  #define SPIPORT PORTB
- #define SCK PB5
- #define MOSI PB3
+ #define SCK PB5    // 13
+ #define MOSI PB3   // 11
 
 
 /*
+
+// Duemilanove, etc., pin 11 = MOSI, pin 12 = MISO, pin 13 = SCK.
+#define SPI_SCK 13
+#define SPI_DI  12
+#define SPI_DO  11
+
+//Use these pins for the shield!
+#define TFT_CS   10
+#define TFT_DC   8
+#define TFT_RST  0  // you can also connect this to the Arduino reset
+
+//Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,     TFT_DC,    SPI_DO,      SPI_SCK,     TFT_RST);
+  	  	  	  	  	  	Adafruit_ST7735(int8_t CS, int8_t RS, int8_t SID, int8_t SCLK, int8_t RST = -1);
+										10 		,     8     ,   11      ,     13
+
+
+
+
+
 	// ATtiny 85 with software SPI
 	
  * SCL      PB2 (SCK)

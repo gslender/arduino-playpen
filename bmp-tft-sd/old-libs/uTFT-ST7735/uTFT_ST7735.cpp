@@ -1,5 +1,5 @@
 /***********************************************************************
- * µTFT ST7735
+ * ï¿½TFT ST7735
  *
  * This is a size and speed optimized ANSI-C library to control 1.8" ST7735 TFTs
  *
@@ -141,30 +141,11 @@ void spiwrite(uint8_t c) {
 	// State after call: SCK Low, MOSI high
 }
 
-	
-/* SPI general support functions */
-
-inline void writecommand(uint8_t c) {
-	RSPORT &= ~(1 << RS);
-	spiwrite(c);
-}
-
-inline void writedata(uint8_t c) {
-	RSPORT |= (1 << RS);
-	spiwrite(c);
-}
-
-inline void spistreampixel(uint16_t color) {
-	spiwrite(color>>8);
-	spiwrite(color&0xff);
-}
-
-
-/* SPI Hardware implementation */
-
 #endif
 
 #ifdef SPI_HARDWARE
+
+/* SPI Hardware implementation */
 
 inline void SPI_begin(void) {
 	
@@ -197,24 +178,25 @@ inline void spiwrite(uint8_t c) {
     while (!(SPSR & (1 << SPIF))) ;
 }
 
+#endif
+
+
 /* SPI general support functions */
 
 inline void writecommand(uint8_t c) {
-    RSPORT &= ~(1 << RS);
-    spiwrite(c);
+	RSPORT &= ~(1 << RS);
+	spiwrite(c);
 }
 
 inline void writedata(uint8_t c) {
-    RSPORT |= (1 << RS);
-    spiwrite(c);
+	RSPORT |= (1 << RS);
+	spiwrite(c);
 }
 
 inline void tft_spistreampixel(uint16_t color) {
 	spiwrite(color>>8);
 	spiwrite(color&0xff);
 }
-
-#endif
 
 /********************** END SPI STUFF *********************************/
 

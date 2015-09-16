@@ -1,49 +1,21 @@
 #include "Arduino.h"
-/*
-
-Program:   20458 bytes (62.4% Full)
-(.text + .data + .bootloader)
-
-Data:       1114 bytes (54.4% Full)
-(.data + .bss + .noinit)
-
-
-
-Program:   14970 bytes (45.7% Full)
-(.text + .data + .bootloader)
-
-Data:       1014 bytes (49.5% Full)
-(.data + .bss + .noinit)
- * */
 
 #include <SPI.h>
 #include <SD.h>
-#include <uTFT_ST7735.h>
+#include <Adafruit_ST7735.h>
 
 #if defined(__SAM3X8E__)
     #undef __FlashStringHelper::F(string_literal)
     #define F(string_literal) string_literal
 #endif
 
-// TFT display and SD card will share the hardware SPI interface.
-// Hardware SPI pins are specific to the Arduino board type and
-// cannot be remapped to alternate pins.  For Arduino Uno,
-// Duemilanove, etc., pin 11 = MOSI, pin 12 = MISO, pin 13 = SCK.
-#define SPI_SCK 13
-#define SPI_DI  12
-#define SPI_DO  11
-
 #define SD_CS    4  // Chip select line for SD card
-//#define TFT_CS  10  // Chip select line for TFT display
-//#define TFT_DC   9  // Data/command line for TFT
-//#define TFT_RST  8  // Reset line for TFT (or connect to +5V)
+#define TFT_CS  10  // Chip select line for TFT display
+#define TFT_DC   8  // Data/command line for TFT
+#define TFT_RST  -1  // Reset line for TFT (or connect to +5V)
 
-//Use these pins for the shield!
-#define TFT_CS   10
-#define TFT_DC   8
-#define TFT_RST  0  // you can also connect this to the Arduino reset
+Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
-//Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, SPI_DO, SPI_SCK, TFT_RST);
 
 // These read 16- and 32-bit types from the SD card file.
 // BMP data is stored little-endian, Arduino is little-endian too.
@@ -89,8 +61,7 @@ void bmpDraw(char *filename, uint8_t x, uint8_t y) {
   uint8_t  r, g, b;
   uint32_t pos = 0, startTime = millis();
 
-//  if((x >= tft.width()) || (y >= tft.height())) return;
-  if((x >= _width) || (y >= _height)) return;
+  if((x >= tft.width()) || (y >= tft.height())) return;
 
   Serial.println();
   Serial.print("Loading image '");
@@ -137,14 +108,11 @@ void bmpDraw(char *filename, uint8_t x, uint8_t y) {
         // Crop area to be loaded
         w = bmpWidth;
         h = bmpHeight;
-//        if((x+w-1) >= tft.width())  w = tft.width()  - x;
-//        if((y+h-1) >= tft.height()) h = tft.height() - y;
-        if((x+w-1) >= _width)  w = _width  - x;
-        if((y+h-1) >= _height) h = _height - y;
+        if((x+w-1) >= tft.width())  w = tft.width()  - x;
+        if((y+h-1) >= tft.height()) h = tft.height() - y;
 
         // Set TFT address window to clipped image bounds
-//        tft.setAddrWindow(x, y, x+w-1, y+h-1);
-        tft_setAddrWindow(x, y, x+w-1, y+h-1);
+        tft.setAddrWindow(x, y, x+w-1, y+h-1);
 
         for (row=0; row<h; row++) { // For each scanline...
 
@@ -174,8 +142,7 @@ void bmpDraw(char *filename, uint8_t x, uint8_t y) {
             b = sdbuffer[buffidx++];
             g = sdbuffer[buffidx++];
             r = sdbuffer[buffidx++];
-//            tft.pushColor(tft.Color565(r,g,b));
-            tft_spistreampixel(Color565(r,g,b));
+            tft.pushColor(tft.Color565(r,g,b));
           } // end pixel
         } // end scanline
         Serial.print("Loaded in ");
@@ -192,26 +159,12 @@ void bmpDraw(char *filename, uint8_t x, uint8_t y) {
 void setup(void) {
   Serial.begin(9600);
 
-  // Our supplier changed the 1.8" display slightly after Jan 10, 2012
-  // so that the alignment of the TFT had to be shifted by a few pixels
-  // this just means the init code is slightly different. Check the
-  // color of the tab to see which init code to try. If the display is
-  // cut off or has extra 'random' pixels on the top & left, try the
-  // other option!
-  // If you are seeing red and green color inversion, use Black Tab
+  Serial.println("bmp-tft-sd");
 
-  // If your TFT's plastic wrap has a Black Tab, use the following:
-
-  init();
-
-//  tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
-  // If your TFT's plastic wrap has a Red Tab, use the following:
-  //tft.initR(INITR_REDTAB);   // initialize a ST7735R chip, red tab
-  // If your TFT's plastic wrap has a Green Tab, use the following:
-  //tft.initR(INITR_GREENTAB); // initialize a ST7735R chip, green tab
+  tft.initR(INITR_BLACKTAB);
 
   Serial.print("Initializing SD card...");
-  if (!SD.begin(SD_CS, SPI_DO, SPI_DI, SPI_SCK)) {
+  if (!SD.begin(SD_CS)) {
     Serial.println("failed!");
     return;
   }
