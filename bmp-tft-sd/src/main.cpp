@@ -9,12 +9,19 @@
     #define F(string_literal) string_literal
 #endif
 
+
+
 #define SD_CS    4  // Chip select line for SD card
+
+#define TFT_SCK SCK          //hw SPI - SCK       (pin 13)
+#define TFT_MOSI MOSI         //hw SPI - SDA - DIN (pin 11)
+
 #define TFT_CS  10  // Chip select line for TFT display
 #define TFT_DC   8  // Data/command line for TFT
 #define TFT_RST  -1  // Reset line for TFT (or connect to +5V)
 
-Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
+//Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
+Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCK, TFT_RST);
 
 
 // These read 16- and 32-bit types from the SD card file.

@@ -1,46 +1,25 @@
-#include <SPI.h>
-#include <FTOLED.h>
-#include <fonts/Droid_Sans_12.h>
-//#include <fonts/Droid_Sans_24.h>
-//#include <fonts/SystemFont5x7.h>
+#include "Arduino.h"
 
-/*
- * Countdown on a scrolling screen using a large font
- */
+#define redPin   A0
+#define greenPin A1
 
-const byte pin_cs = 7;
-const byte pin_dc = 2;
-const byte pin_reset = 3;
-
-OLED oled(pin_cs, pin_dc, pin_reset);
-OLED_TextBox box(oled);
-
-const int COUNTDOWN_FROM = 12;
-int counter = COUNTDOWN_FROM;
-
-void setup() {
+void setup()                      // run once, when the sketch starts
+{
+  pinMode(redPin, OUTPUT);        // sets the digital pin as output
+  pinMode(greenPin, OUTPUT);      // sets the digital pin as output
   Serial.begin(115200);
-  oled.begin();
-    oled.selectFont(Droid_Sans_12);
-  //  oled.selectFont(Droid_Sans_24);
-//  oled.selectFont(SystemFont5x7);
-  box.setForegroundColour(LIMEGREEN);
+
 }
 
 void loop() {
-  Serial.print(counter);
-  Serial.println(F("..."));
 
-  box.print(F("Count "));
-  box.print(counter);
-  box.println(F(" . . ."));
-  counter--;
-  delay(1000);
 
-  if(counter == 0) {
-    box.println(F("\nAll Done!"));
-    delay(2000);
-    box.clear();
-    counter = 12;
-  }
+	  digitalWrite(redPin, HIGH);
+	  digitalWrite(greenPin, LOW);
+	  delay(500);
+	  digitalWrite(redPin, LOW);
+	  digitalWrite(greenPin, HIGH);
+	  delay(500);
+
+
 }
