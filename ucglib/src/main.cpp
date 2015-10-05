@@ -37,15 +37,16 @@ inline void printCharAt(byte x, byte y, Color c, char ch) {
 }
 
 void drawRpm(int rpm) {
-	const byte x = 20;
-	const byte y = 80;
-	const byte w = 24;
+	const byte x = 32;
+	const byte y = 35;
+	const byte w = 16;
 
-	const Color fgCol = { 235, 108, 0 };
+	const Color fgCol = { 200, 40, 0 };
 	const Color bgCol = { 0, 0, 0 };
 
 //	ucg.setFont(ucg_font_ncenR24_tr);
-	ucg.setFont(ucg_font_fub30_tr);
+//	ucg.setFont(ucg_font_fub30_tr);
+	ucg.setFont(ucg_font_helvB18_hr);
 	ucg.setColor(1, bgCol.r, bgCol.g, bgCol.b);
 
 	char newRpmStr[5];
@@ -61,26 +62,27 @@ void drawRpm(int rpm) {
 	}
 }
 
-void drawClt(int clt) {
+void drawClt(int clt, uint8_t width) {
+	ucg.setFont(ucg_font_helvB10_hf);
+	ucg.setFontMode(UCG_FONT_MODE_SOLID);
+
 	const byte x = 10;
-	const byte y = 95;
-	const byte w = 110;
-	const byte h = 16;
+	const byte y = 45;
+	const byte w = width;
+	const byte h = ucg.getFontAscent()+abs(ucg.getFontDescent());
 
 	const Color bg_cold = {0,130,0};
 	const Color bg_warm = {0,0,160};
 	const Color bg_hot = {160,0,0};
 	const Color fg = {0,0,0};
 
-	ucg.setColor(0, bg_cold.r, bg_cold.g, bg_cold.b);
-	ucg.drawBox(x,y,w,h);
-
-	ucg.setFont(ucg_font_7x13_mf); // do not use _tf for UCG_FONT_MODE_SOLID
-	ucg.setFontMode(UCG_FONT_MODE_SOLID);
-	ucg.setPrintPos(x, y+11);
+//	ucg.setColor(0, bg_cold.r/2, bg_cold.g/2, bg_cold.b/2);
+	ucg.setColor(0, bg_cold.r/2, bg_cold.g/2, 255);
+	ucg.drawFrame(x,y,w,h);
+	ucg.setPrintPos(x+1, 1+y+h);
 	ucg.setColor(0, 0, 0, 0);
 	ucg.setColor(1, bg_cold.r, bg_cold.g, bg_cold.b);
-	ucg.printf("CLT:%d%c",clt,176); // ASCII 248 = degree symbol
+	ucg.printf("CgT:%d%c",clt,176); // ASCII 248 = degree symbol
 }
 
 void setup(void) {
@@ -98,7 +100,7 @@ void setup(void) {
 //	ucg.drawPixel(2, 2);
 
 	drawRpm(0);
-	drawClt(0);
+	drawClt(0,100);
 
 	rpmMax = random(1000, 8000);
 }
