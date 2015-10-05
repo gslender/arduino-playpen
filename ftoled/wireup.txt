@@ -1,0 +1,11 @@
+OLED	Signal		Connect To
+1		5V			5V Pin
+2		GND			GND Pin
+3		
+4		
+5		
+6		MOSI		Digital Pin 51 (ISP 1)
+7		SCK			Digital Pin 52 (ISP 3)
+8		OLED CS		Digital Pin 8  (configurable)
+9		OLED DNC	Digital Pin 9  (configurable)
+10		OLED RST	Digital Pin 10 (configurable)
